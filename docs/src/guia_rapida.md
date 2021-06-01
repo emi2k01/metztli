@@ -70,18 +70,13 @@ Adicionalmente:
 #### Valores literales
 
 Los valores literales de los tipos numéricos flotantes tienen la misma forma
-que los valores literales de los tipos numéricos enteros, con el requerimiento
-adicional de un punto para indicar el inicio de la parte fraccionaria. A
-diferencia de otros lenguajes, la parte fraccionaria es obligatoria.
+que los valores literales decimales de los tipos numéricos enteros, con el requerimiento
+adicional de un punto para indicar el inicio de la parte fraccionaria. **A
+diferencia de otros lenguajes, la parte fraccionaria es obligatoria.**
 
 ```metz
 24.0
-
-0b100_000.01
-
-0o30.76
-
-0x18.2f
+3.14159
 ```
 
 Además se pueden escribir valores literales en forma exponencial (o notación científica).
