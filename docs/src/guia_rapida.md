@@ -108,7 +108,7 @@ Las siguientes secuencias de escape son aceptadas:
 
 	`"El dijo \"Hola\" ayer"` => El dijo "Hola" ayer
 
-	`"Diagonal invertida: \\"` => Diagonal invertida: \
+	`"Diagonal invertida: \\"` => Diagonal invertida: \\
 
 `caract`: Carácter unicode UTF-8.
 
