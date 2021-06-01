@@ -1,0 +1,6 @@
+[book]
+authors = ["Emilio González"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Docs"
