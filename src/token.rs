@@ -15,7 +15,7 @@ impl Token {
 
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
-    Ident,
+    Identifier,
     Integer,
     Float,
     Boolean,

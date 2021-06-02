@@ -24,16 +24,16 @@ impl<'a> Lexer<'a> {
         let ch1 = self.ch1();
 
         match (ch0, ch1) {
-            (Some('0'), Some('b')) => Some(self.lex_bin_num_lit()),
-            (Some('0'), Some('o')) => Some(self.lex_octal_num_lit()),
-            (Some('0'), Some('x')) => Some(self.lex_hex_num_lit()),
-            (Some(ch0), _) if ch0.is_ascii_digit() => Some(self.lex_dec_num_lit()),
+            (Some('0'), Some('b')) => Some(self.lex_binary_number_literal()),
+            (Some('0'), Some('o')) => Some(self.lex_octal_number_literal()),
+            (Some('0'), Some('x')) => Some(self.lex_hex_number_literal()),
+            (Some(ch0), _) if ch0.is_ascii_digit() => Some(self.lex_decimal_number_literal()),
             (None, None) => None,
             _ => todo!(),
         }
     }
 
-    fn lex_dec_num_lit(&mut self) -> Token {
+    fn lex_decimal_number_literal(&mut self) -> Token {
         //TODO: Add diagnostics for malformed literals
 
         let offset = self.pos;
@@ -67,7 +67,7 @@ impl<'a> Lexer<'a> {
         Token::new(token_kind, (offset, width))
     }
 
-    fn lex_bin_num_lit(&mut self) -> Token {
+    fn lex_binary_number_literal(&mut self) -> Token {
         //TODO: Add diagnostic for invalid digits
 
         let offset = self.pos;
@@ -81,7 +81,7 @@ impl<'a> Lexer<'a> {
         Token::new(TokenKind::Integer, (offset, width))
     }
 
-    fn lex_octal_num_lit(&mut self) -> Token {
+    fn lex_octal_number_literal(&mut self) -> Token {
         //TODO: Add diagnostic for invalid digits
 
         let offset = self.pos;
@@ -95,7 +95,7 @@ impl<'a> Lexer<'a> {
         Token::new(TokenKind::Integer, (offset, width))
     }
 
-    fn lex_hex_num_lit(&mut self) -> Token {
+    fn lex_hex_number_literal(&mut self) -> Token {
         //TODO: Add diagnostic for invalid digits
 
         let offset = self.pos;
