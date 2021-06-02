@@ -36,9 +36,22 @@ impl<'a> Lexer<'a> {
     fn lex_dec_num_lit(&mut self) -> Token {
         let offset = self.pos;
         let mut width = 0;
-        width += self.advance_while(|ch0| ch0.is_ascii_digit() || ch0 == '_');
+        let mut token_kind = TokenKind::Integer;
 
-        Token::new(TokenKind::Integer, Span::new(offset, width))
+        let dec_pred = |ch0: char| ch0.is_ascii_digit() || ch0 == '_';
+
+        // Read integer part
+        width += self.advance_while(dec_pred);
+
+        // Case where the number is a float
+        if let Some('.') = self.ch0() {
+            token_kind = TokenKind::Float;
+            width += 1;
+            self.advance();
+            width += self.advance_while(dec_pred)
+        }
+
+        Token::new(token_kind, Span::new(offset, width))
     }
 
     fn lex_bin_num_lit(&mut self) -> Token {
@@ -158,6 +171,16 @@ mod tests {
         assert_eq!(
             lexer.next(),
             Some(Token::new(TokenKind::Integer, Span::new(0, 13))),
+        );
+    }
+
+    #[test]
+    fn test_float_number_literal_decimal_notation() {
+        let input = "100_000.234_213".chars().collect::<Vec<_>>();
+        let mut lexer = Lexer::new(&input);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Float, Span::new(0, 15))),
         );
     }
 }
