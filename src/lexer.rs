@@ -34,6 +34,8 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_dec_num_lit(&mut self) -> Token {
+        //TODO: Add diagnostics for malformed literals
+
         let offset = self.pos;
         let mut width = 0;
         let mut token_kind = TokenKind::Integer;
@@ -49,6 +51,17 @@ impl<'a> Lexer<'a> {
             width += 1;
             self.advance();
             width += self.advance_while(dec_pred)
+        } else if let Some('E') = self.ch0() {
+            token_kind = TokenKind::Float;
+            width += 1;
+            self.advance();
+
+            if let Some('+' | '-') = self.ch0() {
+                width += 1;
+                self.advance();
+            }
+
+            width += self.advance_while(dec_pred);
         }
 
         Token::new(token_kind, (offset, width))
@@ -167,5 +180,12 @@ mod tests {
         let input = "100_000.234_213".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
         assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 15))),);
+    }
+
+    #[test]
+    fn test_float_number_literal_exponential_notation() {
+        let input = "2E+1_3".chars().collect::<Vec<_>>();
+        let mut lexer = Lexer::new(&input);
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 6))),);
     }
 }
