@@ -1,4 +1,4 @@
-use crate::token::{Span, Token, TokenKind};
+use crate::token::{Token, TokenKind};
 
 pub struct Lexer<'a> {
     input: &'a [char],
@@ -51,7 +51,7 @@ impl<'a> Lexer<'a> {
             width += self.advance_while(dec_pred)
         }
 
-        Token::new(token_kind, Span::new(offset, width))
+        Token::new(token_kind, (offset, width))
     }
 
     fn lex_bin_num_lit(&mut self) -> Token {
@@ -65,7 +65,7 @@ impl<'a> Lexer<'a> {
         let mut width = 2;
         width += self.advance_while(|ch0| ch0.is_ascii_digit() || ch0 == '_');
 
-        Token::new(TokenKind::Integer, Span::new(offset, width))
+        Token::new(TokenKind::Integer, (offset, width))
     }
 
     fn lex_octal_num_lit(&mut self) -> Token {
@@ -79,7 +79,7 @@ impl<'a> Lexer<'a> {
         let mut width = 2;
         width += self.advance_while(|ch0| ch0.is_ascii_digit() || ch0 == '_');
 
-        Token::new(TokenKind::Integer, Span::new(offset, width))
+        Token::new(TokenKind::Integer, (offset, width))
     }
 
     fn lex_hex_num_lit(&mut self) -> Token {
@@ -98,7 +98,7 @@ impl<'a> Lexer<'a> {
                 || ('A'..='F').contains(&ch0)
         });
 
-        Token::new(TokenKind::Integer, Span::new(offset, width))
+        Token::new(TokenKind::Integer, (offset, width))
     }
 
     fn ch0(&self) -> Option<char> {
@@ -138,49 +138,34 @@ mod tests {
     fn test_decimal_number_literal() {
         let input = "921_213_203".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Integer, Span::new(0, 11))),
-        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 11))),);
     }
 
     #[test]
     fn test_binary_number_literal() {
         let input = "0b1001_0110_0010".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Integer, Span::new(0, 16))),
-        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 16))),);
     }
 
     #[test]
     fn test_octal_number_literal() {
         let input = "0o123_456_712".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Integer, Span::new(0, 13))),
-        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 13))),);
     }
 
     #[test]
     fn test_hexadecimal_number_literal() {
         let input = "0x10_bD_Ac_0F".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Integer, Span::new(0, 13))),
-        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 13))),);
     }
 
     #[test]
     fn test_float_number_literal_decimal_notation() {
         let input = "100_000.234_213".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Float, Span::new(0, 15))),
-        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 15))),);
     }
 }

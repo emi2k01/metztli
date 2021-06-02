@@ -5,8 +5,11 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, span: Span) -> Self {
-        Self { kind, span }
+    pub fn new(kind: TokenKind, span: impl Into<Span>) -> Self {
+        Self {
+            kind,
+            span: span.into(),
+        }
     }
 }
 
