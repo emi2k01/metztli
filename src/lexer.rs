@@ -22,7 +22,112 @@ impl<'a> Lexer<'a> {
     pub fn next(&mut self) -> Option<Token> {
         let ch0 = self.ch0();
         let ch1 = self.ch1();
+        let ch2 = self.ch2();
 
+        // Match 3-char tokens
+        let token_kind = match (ch0, ch1, ch2) {
+            (Some('<'), Some('<'), Some('=')) => Some(TokenKind::BitwiseLeftShiftAssignment),
+            (Some('>'), Some('>'), Some('=')) => Some(TokenKind::BitwiseRightShiftAssignment),
+            _ => None,
+        };
+
+        if let Some(token_kind) = token_kind {
+            let offset = self.pos;
+            self.advance();
+            self.advance();
+            self.advance();
+
+            return Some(Token::new(token_kind, (offset, 3)));
+        }
+
+        // Match 2-char tokens
+        let token_kind = match (ch0, ch1) {
+            // Assignment operators
+            (Some('+'), Some('=')) => Some(TokenKind::AdditionAssignment),
+            (Some('-'), Some('=')) => Some(TokenKind::SubtractionAssignment),
+            (Some('*'), Some('=')) => Some(TokenKind::MultiplicationAssignment),
+            (Some('/'), Some('=')) => Some(TokenKind::DivisionAssignment),
+            (Some('%'), Some('=')) => Some(TokenKind::ModuloAssignment),
+            (Some('&'), Some('=')) => Some(TokenKind::BitwiseAndAssignment),
+            (Some('|'), Some('=')) => Some(TokenKind::BitwiseOrAssignment),
+            (Some('^'), Some('=')) => Some(TokenKind::BitwiseXorAssignment),
+            (Some('+'), Some('+')) => Some(TokenKind::IncrementOne),
+            (Some('-'), Some('-')) => Some(TokenKind::SubtractOne),
+
+            // Bitwise operators
+            (Some('<'), Some('<')) => Some(TokenKind::BitwiseLeftShift),
+            (Some('>'), Some('>')) => Some(TokenKind::BitwiseRightShift),
+
+            // Logical operators
+            (Some('&'), Some('&')) => Some(TokenKind::And),
+            (Some('|'), Some('|')) => Some(TokenKind::Or),
+
+            // Comparison operators
+            (Some('='), Some('=')) => Some(TokenKind::Equal),
+            (Some('!'), Some('=')) => Some(TokenKind::NotEqual),
+            (Some('<'), Some('=')) => Some(TokenKind::LessThanEqual),
+            (Some('>'), Some('=')) => Some(TokenKind::GreaterThanEqual),
+
+            _ => None,
+        };
+
+        if let Some(token_kind) = token_kind {
+            let offset = self.pos;
+            self.advance();
+            self.advance();
+
+            return Some(Token::new(token_kind, (offset, 2)));
+        }
+
+        // Match 1-char tokens
+        let token_kind = match ch0 {
+            // Assignment operators
+            Some('=') => Some(TokenKind::Assignment),
+
+            // Arithmetic operators
+            Some('+') => Some(TokenKind::Plus),
+            Some('-') => Some(TokenKind::Minus),
+            Some('*') => Some(TokenKind::Asterisk),
+            Some('/') => Some(TokenKind::Slash),
+            Some('%') => Some(TokenKind::Modulo),
+
+            // Bitwise operators
+            Some('~') => Some(TokenKind::BitwiseNot),
+            Some('&') => Some(TokenKind::BitwiseAnd),
+            Some('|') => Some(TokenKind::BitwiseOr),
+            Some('^') => Some(TokenKind::BitwiseXor),
+
+            // Logical operators
+            Some('!') => Some(TokenKind::Not),
+
+            // Comparison operators
+            Some('<') => Some(TokenKind::LessThan),
+            Some('>') => Some(TokenKind::GreaterThan),
+
+            // Punctuation
+            Some('.') => Some(TokenKind::Period),
+            Some(',') => Some(TokenKind::Comma),
+            Some(';') => Some(TokenKind::Semicolon),
+            Some(':') => Some(TokenKind::Colon),
+
+            // Delimeters
+            Some('(') => Some(TokenKind::LeftParenthesis),
+            Some(')') => Some(TokenKind::RightParenthesis),
+            Some('[') => Some(TokenKind::LeftBracket),
+            Some(']') => Some(TokenKind::RightBracket),
+            Some('{') => Some(TokenKind::LeftBrace),
+            Some('}') => Some(TokenKind::RightBrace),
+            _ => None,
+        };
+
+        if let Some(token_kind) = token_kind {
+            let offset = self.pos;
+            self.advance();
+
+            return Some(Token::new(token_kind, (offset, 1)));
+        }
+
+        // Match n-char tokens
         match (ch0, ch1) {
             (Some('0'), Some('b')) => Some(self.lex_binary_number_literal()),
             (Some('0'), Some('o')) => Some(self.lex_octal_number_literal()),
@@ -120,6 +225,10 @@ impl<'a> Lexer<'a> {
 
     fn ch1(&self) -> Option<char> {
         self.input.get(self.pos + 1).copied()
+    }
+
+    fn ch2(&self) -> Option<char> {
+        self.input.get(self.pos + 2).copied()
     }
 
     fn advance(&mut self) {
