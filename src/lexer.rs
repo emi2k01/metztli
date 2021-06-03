@@ -15,8 +15,14 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn tokens(self) -> Vec<Token> {
-        todo!()
+    pub fn tokens(mut self) -> Vec<Token> {
+        let mut tokens = Vec::new();
+
+        while let Some(token) = self.next() {
+            tokens.push(token);
+        }
+
+        tokens
     }
 
     pub fn next(&mut self) -> Option<Token> {
@@ -321,47 +327,24 @@ mod tests {
     #[test]
     fn test_delimeters() {
         let input = "( { [ ) } ]".chars().collect::<Vec<_>>();
+
         let mut lexer = Lexer::new(&input);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::LeftParenthesis, (0, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Whitespace, (1, 1))),
-        );
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::LeftBrace, (2, 1))),);
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Whitespace, (3, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::LeftBracket, (4, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Whitespace, (5, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::RightParenthesis, (6, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Whitespace, (7, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::RightBrace, (8, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::Whitespace, (9, 1))),
-        );
-        assert_eq!(
-            lexer.next(),
-            Some(Token::new(TokenKind::RightBracket, (10, 1))),
-        );
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::LeftParenthesis, (0, 1)),
+            Token::new(TokenKind::Whitespace, (1, 1)),
+            Token::new(TokenKind::LeftBrace, (2, 1)),
+            Token::new(TokenKind::Whitespace, (3, 1)),
+            Token::new(TokenKind::LeftBracket, (4, 1)),
+            Token::new(TokenKind::Whitespace, (5, 1)),
+            Token::new(TokenKind::RightParenthesis, (6, 1)),
+            Token::new(TokenKind::Whitespace, (7, 1)),
+            Token::new(TokenKind::RightBrace, (8, 1)),
+            Token::new(TokenKind::Whitespace, (9, 1)),
+            Token::new(TokenKind::RightBracket, (10, 1)),
+        ];
+
+        assert_eq!(tokens, expected);
     }
 }
