@@ -79,6 +79,9 @@ pub enum TokenKind {
     RightBracket,
     LeftBrace,
     RightBrace,
+
+    // Trivia
+    Whitespace,
 }
 
 #[derive(Debug, PartialEq)]

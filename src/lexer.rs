@@ -24,6 +24,14 @@ impl<'a> Lexer<'a> {
         let ch1 = self.ch1();
         let ch2 = self.ch2();
 
+        // Match trivia
+        //TODO: Remove clippy attribute when we match other trivia like comments.
+        #[allow(clippy::single_match)]
+        match (ch0, ch1) {
+            (Some(' '), _) => return Some(self.lex_whitespace()),
+            _ => {}
+        }
+
         // Match 3-char tokens
         let token_kind = match (ch0, ch1, ch2) {
             (Some('<'), Some('<'), Some('=')) => Some(TokenKind::BitwiseLeftShiftAssignment),
@@ -217,6 +225,18 @@ impl<'a> Lexer<'a> {
         });
 
         Token::new(TokenKind::Integer, (offset, width))
+    }
+
+    fn lex_whitespace(&mut self) -> Token {
+        let offset = self.pos;
+        let mut width = 0;
+
+        while let Some(' ') = self.ch0() {
+            width += 1;
+            self.advance();
+        }
+
+        Token::new(TokenKind::Whitespace, (offset, width))
     }
 
     fn ch0(&self) -> Option<char> {
