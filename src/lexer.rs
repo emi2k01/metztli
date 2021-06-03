@@ -317,4 +317,51 @@ mod tests {
         let mut lexer = Lexer::new(&input);
         assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 6))),);
     }
+
+    #[test]
+    fn test_delimeters() {
+        let input = "( { [ ) } ]".chars().collect::<Vec<_>>();
+        let mut lexer = Lexer::new(&input);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::LeftParenthesis, (0, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Whitespace, (1, 1))),
+        );
+        assert_eq!(lexer.next(), Some(Token::new(TokenKind::LeftBrace, (2, 1))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Whitespace, (3, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::LeftBracket, (4, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Whitespace, (5, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::RightParenthesis, (6, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Whitespace, (7, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::RightBrace, (8, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Whitespace, (9, 1))),
+        );
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::RightBracket, (10, 1))),
+        );
+    }
 }
