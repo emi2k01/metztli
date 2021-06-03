@@ -325,6 +325,144 @@ mod tests {
     }
 
     #[test]
+    fn test_assignment_operators() {
+        let input = "= += -= *= /= %= &= |= ^= <<= >>="
+            .chars()
+            .collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::Assignment, (0, 1)),
+            Token::new(TokenKind::Whitespace, (1, 1)),
+            Token::new(TokenKind::AdditionAssignment, (2, 2)),
+            Token::new(TokenKind::Whitespace, (4, 1)),
+            Token::new(TokenKind::SubtractionAssignment, (5, 2)),
+            Token::new(TokenKind::Whitespace, (7, 1)),
+            Token::new(TokenKind::MultiplicationAssignment, (8, 2)),
+            Token::new(TokenKind::Whitespace, (10, 1)),
+            Token::new(TokenKind::DivisionAssignment, (11, 2)),
+            Token::new(TokenKind::Whitespace, (13, 1)),
+            Token::new(TokenKind::ModuloAssignment, (14, 2)),
+            Token::new(TokenKind::Whitespace, (16, 1)),
+            Token::new(TokenKind::BitwiseAndAssignment, (17, 2)),
+            Token::new(TokenKind::Whitespace, (19, 1)),
+            Token::new(TokenKind::BitwiseOrAssignment, (20, 2)),
+            Token::new(TokenKind::Whitespace, (22, 1)),
+            Token::new(TokenKind::BitwiseXorAssignment, (23, 2)),
+            Token::new(TokenKind::Whitespace, (25, 1)),
+            Token::new(TokenKind::BitwiseLeftShiftAssignment, (26, 3)),
+            Token::new(TokenKind::Whitespace, (29, 1)),
+            Token::new(TokenKind::BitwiseRightShiftAssignment, (30, 3)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_increment_operators() {
+        let input = "++ --".chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::IncrementOne, (0, 2)),
+            Token::new(TokenKind::Whitespace, (2, 1)),
+            Token::new(TokenKind::SubtractOne, (3, 2)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_bitwise_operators() {
+        let input = "~ & | ^ << >>".chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::BitwiseNot, (0, 1)),
+            Token::new(TokenKind::Whitespace, (1, 1)),
+            Token::new(TokenKind::BitwiseAnd, (2, 1)),
+            Token::new(TokenKind::Whitespace, (3, 1)),
+            Token::new(TokenKind::BitwiseOr, (4, 1)),
+            Token::new(TokenKind::Whitespace, (5, 1)),
+            Token::new(TokenKind::BitwiseXor, (6, 1)),
+            Token::new(TokenKind::Whitespace, (7, 1)),
+            Token::new(TokenKind::BitwiseLeftShift, (8, 2)),
+            Token::new(TokenKind::Whitespace, (10, 1)),
+            Token::new(TokenKind::BitwiseRightShift, (11, 2)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_logical_operators() {
+        let input = "! && ||".chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::Not, (0, 1)),
+            Token::new(TokenKind::Whitespace, (1, 1)),
+            Token::new(TokenKind::And, (2, 2)),
+            Token::new(TokenKind::Whitespace, (4, 1)),
+            Token::new(TokenKind::Or, (5, 2)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_comparison_operators() {
+        let input = "== != < <= > >=".chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::Equal, (0, 2)),
+            Token::new(TokenKind::Whitespace, (2, 1)),
+            Token::new(TokenKind::NotEqual, (3, 2)),
+            Token::new(TokenKind::Whitespace, (5, 1)),
+            Token::new(TokenKind::LessThan, (6, 1)),
+            Token::new(TokenKind::Whitespace, (7, 1)),
+            Token::new(TokenKind::LessThanEqual, (8, 2)),
+            Token::new(TokenKind::Whitespace, (10, 1)),
+            Token::new(TokenKind::GreaterThan, (11, 1)),
+            Token::new(TokenKind::Whitespace, (12, 1)),
+            Token::new(TokenKind::GreaterThanEqual, (13, 2)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_punctuation_operators() {
+        let input = ". , ; :".chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::Period, (0, 1)),
+            Token::new(TokenKind::Whitespace, (1, 1)),
+            Token::new(TokenKind::Comma, (2, 1)),
+            Token::new(TokenKind::Whitespace, (3, 1)),
+            Token::new(TokenKind::Semicolon, (4, 1)),
+            Token::new(TokenKind::Whitespace, (5, 1)),
+            Token::new(TokenKind::Colon, (6, 1)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
     fn test_delimeters() {
         let input = "( { [ ) } ]".chars().collect::<Vec<_>>();
 
@@ -343,6 +481,22 @@ mod tests {
             Token::new(TokenKind::RightBrace, (8, 1)),
             Token::new(TokenKind::Whitespace, (9, 1)),
             Token::new(TokenKind::RightBracket, (10, 1)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_trivia() {
+        let input = "    |    ".chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::Whitespace, (0, 4)),
+            Token::new(TokenKind::BitwiseOr, (4, 1)),
+            Token::new(TokenKind::Whitespace, (5, 4)),
         ];
 
         assert_eq!(tokens, expected);
