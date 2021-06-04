@@ -146,6 +146,7 @@ impl<'a> Lexer<'a> {
             (Some('0'), Some('b')) => Some(self.lex_binary_number_literal()),
             (Some('0'), Some('o')) => Some(self.lex_octal_number_literal()),
             (Some('0'), Some('x')) => Some(self.lex_hex_number_literal()),
+            (Some('"'), _) => Some(self.lex_string_literal()),
             (Some(ch0), _) if ch0.is_ascii_digit() => Some(self.lex_decimal_number_literal()),
             (Some(ch0), _) if is_ident_start(ch0) => Some(self.lex_identifier()),
             (None, None) => None,
@@ -232,6 +233,19 @@ impl<'a> Lexer<'a> {
         });
 
         Token::new(TokenKind::Integer, (offset, width))
+    }
+
+    fn lex_string_literal(&mut self) -> Token {
+        // Skip opening quote
+        self.advance();
+
+        let offset = self.pos;
+        let width = self.advance_while(|ch| ch != '"');
+
+        // Skip closing quote
+        self.advance();
+
+        Token::new(TokenKind::String, (offset, width))
     }
 
     fn lex_whitespace(&mut self) -> Token {
@@ -337,6 +351,18 @@ mod tests {
         let input = "2E+1_3".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
         assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 6))),);
+    }
+
+    #[test]
+    fn test_string_literal() {
+        let input = r#""€l níño esŧa en\tfer\nmo""#.chars().collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![Token::new(TokenKind::String, (1, 24))];
+
+        assert_eq!(tokens, expected);
     }
 
     #[test]
