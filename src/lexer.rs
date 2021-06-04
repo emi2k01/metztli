@@ -51,7 +51,11 @@ impl<'a> Lexer<'a> {
             self.advance();
             self.advance();
 
-            return Some(Token::new(token_kind, (offset, 3)));
+            return Some(Token::new(
+                token_kind,
+                self.input[offset..offset + 3].iter().collect(),
+                (offset, 3),
+            ));
         }
 
         // Match 2-char tokens
@@ -90,7 +94,11 @@ impl<'a> Lexer<'a> {
             self.advance();
             self.advance();
 
-            return Some(Token::new(token_kind, (offset, 2)));
+            return Some(Token::new(
+                token_kind,
+                self.input[offset..offset + 2].iter().collect(),
+                (offset, 2),
+            ));
         }
 
         // Match 1-char tokens
@@ -138,20 +146,34 @@ impl<'a> Lexer<'a> {
             let offset = self.pos;
             self.advance();
 
-            return Some(Token::new(token_kind, (offset, 1)));
+            return Some(Token::new(
+                token_kind,
+                self.input[offset..offset + 1].iter().collect(),
+                (offset, 1),
+            ));
         }
 
         // Match n-char tokens
-        match (ch0, ch1) {
-            (Some('0'), Some('b')) => Some(self.lex_binary_number_literal()),
-            (Some('0'), Some('o')) => Some(self.lex_octal_number_literal()),
-            (Some('0'), Some('x')) => Some(self.lex_hex_number_literal()),
-            (Some('"'), _) => Some(self.lex_string_literal()),
-            (Some(ch0), _) if ch0.is_ascii_digit() => Some(self.lex_decimal_number_literal()),
-            (Some(ch0), _) if is_ident_start(ch0) => Some(self.lex_identifier()),
-            (None, None) => None,
+        let mut token = match (ch0, ch1) {
+            (Some('0'), Some('b')) => self.lex_binary_number_literal(),
+            (Some('0'), Some('o')) => self.lex_octal_number_literal(),
+            (Some('0'), Some('x')) => self.lex_hex_number_literal(),
+            (Some('"'), _) => self.lex_string_literal(),
+            (Some(ch0), _) if ch0.is_ascii_digit() => self.lex_decimal_number_literal(),
+            (Some(ch0), _) if is_ident_start(ch0) => self.lex_identifier(),
+            (None, None) => return None,
             _ => todo!(),
-        }
+        };
+
+        let span = token.span();
+
+        token.set_text(
+            self.input[span.offset..span.offset + span.width]
+                .iter()
+                .collect(),
+        );
+
+        Some(token)
     }
 
     fn lex_decimal_number_literal(&mut self) -> Token {
@@ -185,7 +207,7 @@ impl<'a> Lexer<'a> {
             width += self.advance_while(dec_pred);
         }
 
-        Token::new(token_kind, (offset, width))
+        Token::new(token_kind, String::new(), (offset, width))
     }
 
     fn lex_binary_number_literal(&mut self) -> Token {
@@ -199,7 +221,7 @@ impl<'a> Lexer<'a> {
         let mut width = 2;
         width += self.advance_while(|ch0| ch0.is_ascii_digit() || ch0 == '_');
 
-        Token::new(TokenKind::Integer, (offset, width))
+        Token::new(TokenKind::Integer, String::new(), (offset, width))
     }
 
     fn lex_octal_number_literal(&mut self) -> Token {
@@ -213,7 +235,7 @@ impl<'a> Lexer<'a> {
         let mut width = 2;
         width += self.advance_while(|ch0| ch0.is_ascii_digit() || ch0 == '_');
 
-        Token::new(TokenKind::Integer, (offset, width))
+        Token::new(TokenKind::Integer, String::new(), (offset, width))
     }
 
     fn lex_hex_number_literal(&mut self) -> Token {
@@ -232,7 +254,7 @@ impl<'a> Lexer<'a> {
                 || ('A'..='F').contains(&ch0)
         });
 
-        Token::new(TokenKind::Integer, (offset, width))
+        Token::new(TokenKind::Integer, String::new(), (offset, width))
     }
 
     fn lex_string_literal(&mut self) -> Token {
@@ -245,7 +267,7 @@ impl<'a> Lexer<'a> {
         // Skip closing quote
         self.advance();
 
-        Token::new(TokenKind::String, (offset, width))
+        Token::new(TokenKind::String, String::new(), (offset, width))
     }
 
     fn lex_whitespace(&mut self) -> Token {
@@ -257,7 +279,11 @@ impl<'a> Lexer<'a> {
             self.advance();
         }
 
-        Token::new(TokenKind::Whitespace, (offset, width))
+        Token::new(
+            TokenKind::Whitespace,
+            std::iter::repeat(' ').take(width).collect(),
+            (offset, width),
+        )
     }
 
     fn lex_identifier(&mut self) -> Token {
@@ -267,7 +293,7 @@ impl<'a> Lexer<'a> {
 
         width += self.advance_while(|ch| is_ident_start(ch) || ch.is_ascii_digit());
 
-        Token::new(TokenKind::Identifier, (offset, width))
+        Token::new(TokenKind::Identifier, String::new(), (offset, width))
     }
 
     fn ch0(&self) -> Option<char> {
@@ -315,42 +341,80 @@ mod tests {
     fn test_decimal_number_literal() {
         let input = "921_213_203".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 11))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenKind::Integer,
+                String::from("921_213_203"),
+                (0, 11)
+            )),
+        );
     }
 
     #[test]
     fn test_binary_number_literal() {
         let input = "0b1001_0110_0010".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 16))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenKind::Integer,
+                String::from("0b1001_0110_0010"),
+                (0, 16)
+            )),
+        );
     }
 
     #[test]
     fn test_octal_number_literal() {
         let input = "0o123_456_712".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 13))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenKind::Integer,
+                String::from("0o123_456_712"),
+                (0, 13)
+            )),
+        );
     }
 
     #[test]
     fn test_hexadecimal_number_literal() {
         let input = "0x10_bD_Ac_0F".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Integer, (0, 13))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenKind::Integer,
+                String::from("0x10_bD_Ac_0F"),
+                (0, 13)
+            )),
+        );
     }
 
     #[test]
     fn test_float_number_literal_decimal_notation() {
         let input = "100_000.234_213".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 15))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(
+                TokenKind::Float,
+                String::from("100_000.234_213"),
+                (0, 15)
+            )),
+        );
     }
 
     #[test]
     fn test_float_number_literal_exponential_notation() {
         let input = "2E+1_3".chars().collect::<Vec<_>>();
         let mut lexer = Lexer::new(&input);
-        assert_eq!(lexer.next(), Some(Token::new(TokenKind::Float, (0, 6))),);
+        assert_eq!(
+            lexer.next(),
+            Some(Token::new(TokenKind::Float, String::from("2E+1_3"), (0, 6))),
+        );
     }
 
     #[test]
@@ -360,7 +424,11 @@ mod tests {
         let mut lexer = Lexer::new(&input);
         let tokens = lexer.tokens();
 
-        let expected = vec![Token::new(TokenKind::String, (1, 24))];
+        let expected = vec![Token::new(
+            TokenKind::String,
+            String::from("€l níño esŧa en\\tfer\\nmo"),
+            (1, 24),
+        )];
 
         assert_eq!(tokens, expected);
     }
@@ -375,27 +443,39 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::Assignment, (0, 1)),
-            Token::new(TokenKind::Whitespace, (1, 1)),
-            Token::new(TokenKind::AdditionAssignment, (2, 2)),
-            Token::new(TokenKind::Whitespace, (4, 1)),
-            Token::new(TokenKind::SubtractionAssignment, (5, 2)),
-            Token::new(TokenKind::Whitespace, (7, 1)),
-            Token::new(TokenKind::MultiplicationAssignment, (8, 2)),
-            Token::new(TokenKind::Whitespace, (10, 1)),
-            Token::new(TokenKind::DivisionAssignment, (11, 2)),
-            Token::new(TokenKind::Whitespace, (13, 1)),
-            Token::new(TokenKind::ModuloAssignment, (14, 2)),
-            Token::new(TokenKind::Whitespace, (16, 1)),
-            Token::new(TokenKind::BitwiseAndAssignment, (17, 2)),
-            Token::new(TokenKind::Whitespace, (19, 1)),
-            Token::new(TokenKind::BitwiseOrAssignment, (20, 2)),
-            Token::new(TokenKind::Whitespace, (22, 1)),
-            Token::new(TokenKind::BitwiseXorAssignment, (23, 2)),
-            Token::new(TokenKind::Whitespace, (25, 1)),
-            Token::new(TokenKind::BitwiseLeftShiftAssignment, (26, 3)),
-            Token::new(TokenKind::Whitespace, (29, 1)),
-            Token::new(TokenKind::BitwiseRightShiftAssignment, (30, 3)),
+            Token::new(TokenKind::Assignment, String::from("="), (0, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (1, 1)),
+            Token::new(TokenKind::AdditionAssignment, String::from("+="), (2, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (4, 1)),
+            Token::new(TokenKind::SubtractionAssignment, String::from("-="), (5, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (7, 1)),
+            Token::new(
+                TokenKind::MultiplicationAssignment,
+                String::from("*="),
+                (8, 2),
+            ),
+            Token::new(TokenKind::Whitespace, String::from(" "), (10, 1)),
+            Token::new(TokenKind::DivisionAssignment, String::from("/="), (11, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (13, 1)),
+            Token::new(TokenKind::ModuloAssignment, String::from("%="), (14, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (16, 1)),
+            Token::new(TokenKind::BitwiseAndAssignment, String::from("&="), (17, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (19, 1)),
+            Token::new(TokenKind::BitwiseOrAssignment, String::from("|="), (20, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (22, 1)),
+            Token::new(TokenKind::BitwiseXorAssignment, String::from("^="), (23, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (25, 1)),
+            Token::new(
+                TokenKind::BitwiseLeftShiftAssignment,
+                String::from("<<="),
+                (26, 3),
+            ),
+            Token::new(TokenKind::Whitespace, String::from(" "), (29, 1)),
+            Token::new(
+                TokenKind::BitwiseRightShiftAssignment,
+                String::from(">>="),
+                (30, 3),
+            ),
         ];
 
         assert_eq!(tokens, expected);
@@ -409,9 +489,9 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::IncrementOne, (0, 2)),
-            Token::new(TokenKind::Whitespace, (2, 1)),
-            Token::new(TokenKind::SubtractOne, (3, 2)),
+            Token::new(TokenKind::IncrementOne, String::from("++"), (0, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (2, 1)),
+            Token::new(TokenKind::SubtractOne, String::from("--"), (3, 2)),
         ];
 
         assert_eq!(tokens, expected);
@@ -425,17 +505,17 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::BitwiseNot, (0, 1)),
-            Token::new(TokenKind::Whitespace, (1, 1)),
-            Token::new(TokenKind::BitwiseAnd, (2, 1)),
-            Token::new(TokenKind::Whitespace, (3, 1)),
-            Token::new(TokenKind::BitwiseOr, (4, 1)),
-            Token::new(TokenKind::Whitespace, (5, 1)),
-            Token::new(TokenKind::BitwiseXor, (6, 1)),
-            Token::new(TokenKind::Whitespace, (7, 1)),
-            Token::new(TokenKind::BitwiseLeftShift, (8, 2)),
-            Token::new(TokenKind::Whitespace, (10, 1)),
-            Token::new(TokenKind::BitwiseRightShift, (11, 2)),
+            Token::new(TokenKind::BitwiseNot, String::from("~"), (0, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (1, 1)),
+            Token::new(TokenKind::BitwiseAnd, String::from("&"), (2, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (3, 1)),
+            Token::new(TokenKind::BitwiseOr, String::from("|"), (4, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (5, 1)),
+            Token::new(TokenKind::BitwiseXor, String::from("^"), (6, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (7, 1)),
+            Token::new(TokenKind::BitwiseLeftShift, String::from("<<"), (8, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (10, 1)),
+            Token::new(TokenKind::BitwiseRightShift, String::from(">>"), (11, 2)),
         ];
 
         assert_eq!(tokens, expected);
@@ -449,11 +529,11 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::Not, (0, 1)),
-            Token::new(TokenKind::Whitespace, (1, 1)),
-            Token::new(TokenKind::And, (2, 2)),
-            Token::new(TokenKind::Whitespace, (4, 1)),
-            Token::new(TokenKind::Or, (5, 2)),
+            Token::new(TokenKind::Not, String::from("!"), (0, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (1, 1)),
+            Token::new(TokenKind::And, String::from("&&"), (2, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (4, 1)),
+            Token::new(TokenKind::Or, String::from("||"), (5, 2)),
         ];
 
         assert_eq!(tokens, expected);
@@ -467,17 +547,17 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::Equal, (0, 2)),
-            Token::new(TokenKind::Whitespace, (2, 1)),
-            Token::new(TokenKind::NotEqual, (3, 2)),
-            Token::new(TokenKind::Whitespace, (5, 1)),
-            Token::new(TokenKind::LessThan, (6, 1)),
-            Token::new(TokenKind::Whitespace, (7, 1)),
-            Token::new(TokenKind::LessThanEqual, (8, 2)),
-            Token::new(TokenKind::Whitespace, (10, 1)),
-            Token::new(TokenKind::GreaterThan, (11, 1)),
-            Token::new(TokenKind::Whitespace, (12, 1)),
-            Token::new(TokenKind::GreaterThanEqual, (13, 2)),
+            Token::new(TokenKind::Equal, String::from("=="), (0, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (2, 1)),
+            Token::new(TokenKind::NotEqual, String::from("!="), (3, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (5, 1)),
+            Token::new(TokenKind::LessThan, String::from("<"), (6, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (7, 1)),
+            Token::new(TokenKind::LessThanEqual, String::from("<="), (8, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (10, 1)),
+            Token::new(TokenKind::GreaterThan, String::from(">"), (11, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (12, 1)),
+            Token::new(TokenKind::GreaterThanEqual, String::from(">="), (13, 2)),
         ];
 
         assert_eq!(tokens, expected);
@@ -491,13 +571,13 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::Period, (0, 1)),
-            Token::new(TokenKind::Whitespace, (1, 1)),
-            Token::new(TokenKind::Comma, (2, 1)),
-            Token::new(TokenKind::Whitespace, (3, 1)),
-            Token::new(TokenKind::Semicolon, (4, 1)),
-            Token::new(TokenKind::Whitespace, (5, 1)),
-            Token::new(TokenKind::Colon, (6, 1)),
+            Token::new(TokenKind::Period, String::from("."), (0, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (1, 1)),
+            Token::new(TokenKind::Comma, String::from(","), (2, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (3, 1)),
+            Token::new(TokenKind::Semicolon, String::from(";"), (4, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (5, 1)),
+            Token::new(TokenKind::Colon, String::from(":"), (6, 1)),
         ];
 
         assert_eq!(tokens, expected);
@@ -511,17 +591,17 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::LeftParenthesis, (0, 1)),
-            Token::new(TokenKind::Whitespace, (1, 1)),
-            Token::new(TokenKind::LeftBrace, (2, 1)),
-            Token::new(TokenKind::Whitespace, (3, 1)),
-            Token::new(TokenKind::LeftBracket, (4, 1)),
-            Token::new(TokenKind::Whitespace, (5, 1)),
-            Token::new(TokenKind::RightParenthesis, (6, 1)),
-            Token::new(TokenKind::Whitespace, (7, 1)),
-            Token::new(TokenKind::RightBrace, (8, 1)),
-            Token::new(TokenKind::Whitespace, (9, 1)),
-            Token::new(TokenKind::RightBracket, (10, 1)),
+            Token::new(TokenKind::LeftParenthesis, String::from("("), (0, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (1, 1)),
+            Token::new(TokenKind::LeftBrace, String::from("{"), (2, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (3, 1)),
+            Token::new(TokenKind::LeftBracket, String::from("["), (4, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (5, 1)),
+            Token::new(TokenKind::RightParenthesis, String::from(")"), (6, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (7, 1)),
+            Token::new(TokenKind::RightBrace, String::from("}"), (8, 1)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (9, 1)),
+            Token::new(TokenKind::RightBracket, String::from("]"), (10, 1)),
         ];
 
         assert_eq!(tokens, expected);
@@ -535,9 +615,9 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::Whitespace, (0, 4)),
-            Token::new(TokenKind::BitwiseOr, (4, 1)),
-            Token::new(TokenKind::Whitespace, (5, 4)),
+            Token::new(TokenKind::Whitespace, String::from("    "), (0, 4)),
+            Token::new(TokenKind::BitwiseOr, String::from("|"), (4, 1)),
+            Token::new(TokenKind::Whitespace, String::from("    "), (5, 4)),
         ];
 
         assert_eq!(tokens, expected);
@@ -553,13 +633,17 @@ mod tests {
         let tokens = lexer.tokens();
 
         let expected = vec![
-            Token::new(TokenKind::Identifier, (0, 9)),
-            Token::new(TokenKind::Whitespace, (9, 1)),
-            Token::new(TokenKind::Identifier, (10, 2)),
-            Token::new(TokenKind::Whitespace, (12, 1)),
-            Token::new(TokenKind::Identifier, (13, 12)),
-            Token::new(TokenKind::Whitespace, (25, 1)),
-            Token::new(TokenKind::Identifier, (26, 7)),
+            Token::new(TokenKind::Identifier, String::from("edad_niño"), (0, 9)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (9, 1)),
+            Token::new(TokenKind::Identifier, String::from("si"), (10, 2)),
+            Token::new(TokenKind::Whitespace, String::from(" "), (12, 1)),
+            Token::new(
+                TokenKind::Identifier,
+                String::from("MyEstructura"),
+                (13, 12),
+            ),
+            Token::new(TokenKind::Whitespace, String::from(" "), (25, 1)),
+            Token::new(TokenKind::Identifier, String::from("RFC_932"), (26, 7)),
         ];
 
         assert_eq!(tokens, expected);

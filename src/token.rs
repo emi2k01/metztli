@@ -1,15 +1,25 @@
 #[derive(Debug, PartialEq)]
 pub struct Token {
     kind: TokenKind,
+    text: String,
     span: Span,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, span: impl Into<Span>) -> Self {
+    pub fn new(kind: TokenKind, text: String, span: impl Into<Span>) -> Self {
         Self {
             kind,
+            text,
             span: span.into(),
         }
+    }
+
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+    }
+
+    pub fn span(&self) -> Span {
+        self.span
     }
 }
 
@@ -83,7 +93,7 @@ pub enum TokenKind {
     Whitespace,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Span {
     pub offset: usize,
     pub width: usize,
