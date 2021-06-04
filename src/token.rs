@@ -1,29 +1,17 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Token {
     kind: TokenKind,
-    text: String,
-    span: Span,
+    pub len: usize,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, text: String, span: impl Into<Span>) -> Self {
-        Self {
-            kind,
-            text,
-            span: span.into(),
-        }
-    }
-
-    pub fn set_text(&mut self, text: String) {
-        self.text = text;
-    }
-
-    pub fn span(&self) -> Span {
-        self.span
+    pub fn new(kind: TokenKind, len: usize) -> Self {
+        Self { kind, len }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u16)]
 pub enum TokenKind {
     Identifier,
     Integer,
@@ -91,22 +79,28 @@ pub enum TokenKind {
 
     // Trivia
     Whitespace,
+
+    Root,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Span {
-    pub offset: usize,
-    pub width: usize,
-}
-
-impl Span {
-    pub fn new(offset: usize, width: usize) -> Self {
-        Self { offset, width }
+impl From<TokenKind> for rowan::SyntaxKind {
+    fn from(kind: TokenKind) -> Self {
+        Self(kind as u16)
     }
 }
 
-impl From<(usize, usize)> for Span {
-    fn from((offset, width): (usize, usize)) -> Self {
-        Self::new(offset, width)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum Lang {}
+
+impl rowan::Language for Lang {
+    type Kind = TokenKind;
+
+    fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
+        assert!(raw.0 <= TokenKind::Root as u16);
+        unsafe { std::mem::transmute::<u16, TokenKind>(raw.0) }
+    }
+
+    fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {
+        kind.into()
     }
 }
