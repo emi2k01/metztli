@@ -147,6 +147,7 @@ impl<'a> Lexer<'a> {
             (Some('0'), Some('o')) => Some(self.lex_octal_number_literal()),
             (Some('0'), Some('x')) => Some(self.lex_hex_number_literal()),
             (Some(ch0), _) if ch0.is_ascii_digit() => Some(self.lex_decimal_number_literal()),
+            (Some(ch0), _) if is_ident_start(ch0) => Some(self.lex_identifier()),
             (None, None) => None,
             _ => todo!(),
         }
@@ -245,6 +246,16 @@ impl<'a> Lexer<'a> {
         Token::new(TokenKind::Whitespace, (offset, width))
     }
 
+    fn lex_identifier(&mut self) -> Token {
+        let offset = self.pos;
+        let mut width = 1;
+        self.advance();
+
+        width += self.advance_while(|ch| is_ident_start(ch) || ch.is_ascii_digit());
+
+        Token::new(TokenKind::Identifier, (offset, width))
+    }
+
     fn ch0(&self) -> Option<char> {
         self.input.get(self.pos).copied()
     }
@@ -276,6 +287,10 @@ impl<'a> Lexer<'a> {
 
         n
     }
+}
+
+fn is_ident_start(ch: char) -> bool {
+    ch.is_ascii_alphabetic() || ch == 'ñ' || ch == '_'
 }
 
 #[cfg(test)]
@@ -497,6 +512,28 @@ mod tests {
             Token::new(TokenKind::Whitespace, (0, 4)),
             Token::new(TokenKind::BitwiseOr, (4, 1)),
             Token::new(TokenKind::Whitespace, (5, 4)),
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_identifier() {
+        let input = "edad_niño si MyEstructura RFC_932"
+            .chars()
+            .collect::<Vec<_>>();
+
+        let mut lexer = Lexer::new(&input);
+        let tokens = lexer.tokens();
+
+        let expected = vec![
+            Token::new(TokenKind::Identifier, (0, 9)),
+            Token::new(TokenKind::Whitespace, (9, 1)),
+            Token::new(TokenKind::Identifier, (10, 2)),
+            Token::new(TokenKind::Whitespace, (12, 1)),
+            Token::new(TokenKind::Identifier, (13, 12)),
+            Token::new(TokenKind::Whitespace, (25, 1)),
+            Token::new(TokenKind::Identifier, (26, 7)),
         ];
 
         assert_eq!(tokens, expected);

@@ -18,7 +18,6 @@ pub enum TokenKind {
     Identifier,
     Integer,
     Float,
-    Boolean,
     String,
 
     // Assignment operators
