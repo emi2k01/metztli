@@ -31,11 +31,11 @@ impl<'a> Lexer<'a> {
         let ch2 = self.ch2();
 
         // Match trivia
-        //TODO: Remove clippy attribute when we match other trivia like comments.
+        // TODO: Remove clippy attribute when we match other trivia like comments.
         #[allow(clippy::single_match)]
         match (ch0, ch1) {
             (Some(' '), _) => return Some(self.lex_whitespace()),
-            _ => {}
+            _ => {},
         }
 
         // Match 3-char tokens
@@ -155,7 +155,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_decimal_number_literal(&mut self) -> Token {
-        //TODO: Add diagnostics for malformed literals
+        // TODO: Add diagnostics for malformed literals
 
         let offset = self.pos;
         let mut width = 0;
@@ -189,7 +189,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_binary_number_literal(&mut self) -> Token {
-        //TODO: Add diagnostic for invalid digits
+        // TODO: Add diagnostic for invalid digits
 
         let offset = self.pos;
         // skip 0b123
@@ -203,7 +203,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_octal_number_literal(&mut self) -> Token {
-        //TODO: Add diagnostic for invalid digits
+        // TODO: Add diagnostic for invalid digits
 
         let offset = self.pos;
         // skip 0o123
@@ -217,7 +217,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn lex_hex_number_literal(&mut self) -> Token {
-        //TODO: Add diagnostic for invalid digits
+        // TODO: Add diagnostic for invalid digits
 
         let offset = self.pos;
         // skip 0x123
@@ -286,8 +286,8 @@ impl<'a> Lexer<'a> {
         self.pos += 1;
     }
 
-    /// Advances the lexer position while `pred` evaluates to true and returns the number of
-    /// positions it advanced
+    /// Advances the lexer position while `pred` evaluates to true and returns
+    /// the number of positions it advanced
     fn advance_while(&mut self, mut pred: impl FnMut(char) -> bool) -> usize {
         let mut n = 0;
         while let Some(ch) = self.ch0() {
